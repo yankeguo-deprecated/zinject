@@ -11,8 +11,8 @@ type SpecialString interface {
 }
 
 type TestStruct struct {
-	Dep1 string        `inject:"t" json:"-"`
-	Dep2 SpecialString `inject`
+	Dep1 string        `inject:"" json:"-"`
+	Dep2 SpecialString `inject:""`
 	Dep3 string
 }
 
@@ -40,10 +40,10 @@ func refute(t *testing.T, a interface{}, b interface{}) {
 func Test_InjectorApply(t *testing.T) {
 	injector := zinject.New()
 
-	injector.Map("a dep").MapTo("another dep", (*SpecialString)(nil))
+	injector.Register("a dep", "").RegisterAs("another dep", "", (*SpecialString)(nil))
 
 	s := TestStruct{}
-	err := injector.Apply(&s)
+	err := injector.Inject(&s)
 	expect(t, err, nil)
 
 	expect(t, s.Dep1, "a dep")
@@ -77,37 +77,37 @@ func Test_InjectorSet(t *testing.T) {
 	chanRecv := reflect.MakeChan(reflect.ChanOf(reflect.BothDir, typ), 0)
 	chanSend := reflect.MakeChan(reflect.ChanOf(reflect.BothDir, typ), 0)
 
-	injector.Set(typSend, chanSend)
-	injector.Set(typRecv, chanRecv)
+	injector.Set(typSend, "", chanSend)
+	injector.Set(typRecv, "", chanRecv)
 
-	expect(t, injector.Get(typSend).IsValid(), true)
-	expect(t, injector.Get(typRecv).IsValid(), true)
-	expect(t, injector.Get(chanSend.Type()).IsValid(), false)
+	expect(t, injector.Get(typSend, "").IsValid(), true)
+	expect(t, injector.Get(typRecv, "").IsValid(), true)
+	expect(t, injector.Get(chanSend.Type(), "").IsValid(), false)
 }
 
 func Test_InjectorGet(t *testing.T) {
 	injector := zinject.New()
 
-	injector.Map("some dependency")
+	injector.Register("some dependency", "")
 
-	expect(t, injector.Get(reflect.TypeOf("string")).IsValid(), true)
-	expect(t, injector.Get(reflect.TypeOf(11)).IsValid(), false)
+	expect(t, injector.Get(reflect.TypeOf("string"), "").IsValid(), true)
+	expect(t, injector.Get(reflect.TypeOf(11), "").IsValid(), false)
 }
 
 func Test_InjectorSetParent(t *testing.T) {
 	injector := zinject.New()
-	injector.MapTo("another dep", (*SpecialString)(nil))
+	injector.RegisterAs("another dep", "", (*SpecialString)(nil))
 
 	injector2 := zinject.New()
 	injector2.SetParent(injector)
 
-	expect(t, injector2.Get(zinject.InterfaceOf((*SpecialString)(nil))).IsValid(), true)
+	expect(t, injector2.Get(zinject.InterfaceOf((*SpecialString)(nil)), "").IsValid(), true)
 }
 
 func TestInjectImplementors(t *testing.T) {
 	injector := zinject.New()
 	g := &Greeter{"Jeremy"}
-	injector.Map(g)
+	injector.Register(g, "")
 
-	expect(t, injector.Get(zinject.InterfaceOf((*fmt.Stringer)(nil))).IsValid(), true)
+	expect(t, injector.Get(zinject.InterfaceOf((*fmt.Stringer)(nil)), "").IsValid(), true)
 }
